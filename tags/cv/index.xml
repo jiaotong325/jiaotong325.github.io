@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>cv on jiaotong</title>
+    <link>https://jiaotong.me/tags/cv/</link>
+    <description>Recent content in cv on jiaotong</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 22 Jul 2023 12:59:23 +0000</lastBuildDate>
+    
+	<atom:link href="https://jiaotong.me/tags/cv/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Pen</title>
+      <link>https://jiaotong.me/post/pen/</link>
+      <pubDate>Sat, 22 Jul 2023 12:59:23 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/post/pen/</guid>
+      <description>&lt;h1 id=&#34;脑pet图像分析和疾病预测挑战赛&#34;&gt;脑PET图像分析和疾病预测挑战赛&lt;/h1&gt;
+&lt;h2 id=&#34;概述&#34;&gt;概述&lt;/h2&gt;
+&lt;p&gt;基于脑PET图像的疾病预测，训练集分为NC(健康)和MCI(轻度认知障碍)。通过对数据集进行建模，对轻度认知障碍进行分析和预测。&lt;/p&gt;
+&lt;h2 id=&#34;数据集&#34;&gt;数据集&lt;/h2&gt;
+&lt;p&gt;数据集中图像分为NC组和MCI组，每组25个样本，每个样本是格式为&lt;code&gt;nii&lt;/code&gt;的图像，这种图像是医学三维图像，为处理此类图像可使用python库&lt;code&gt;nibabel&lt;/code&gt;，该库专门用于处理医学图像。&lt;/p&gt;
+&lt;h2 id=&#34;逻辑回归方法--baseline&#34;&gt;逻辑回归方法  baseline&lt;/h2&gt;
+&lt;p&gt;赛题数据集较小，因此使用逻辑回归的传统图像分类算法是个不错的选择。&lt;/p&gt;
+&lt;h3 id=&#34;数据读取&#34;&gt;数据读取&lt;/h3&gt;
+&lt;p&gt;对于nii格式的数据，使用库&lt;code&gt;nibabel&lt;/code&gt;读取：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; nibabel &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; nib
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;img &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; nib&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;load(path)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;nib.load()会返回一个numpy中的array数组。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;img &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; img&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dataobj[:, :, :, &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# print(img.shape)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 随机筛选其中的10个通道提取特征&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;random_img &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; img[:, :, np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;random&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;choice(range(img&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;shape[&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;]), &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;)]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;特征提取&#34;&gt;特征提取&lt;/h3&gt;
+&lt;p&gt;查看该数组的shape为四维数据，最后一维数据仅为1，故将其转换为三维数据，选取第一个通道的数据；在三位图像中随机选取10个通道的二维图像提取数据。&lt;/p&gt;
+&lt;p&gt;观察图像，选取特征值，取特征8个作为训练与判断的标准，分别是：非零像素的数量，零像素的数量，像素平均值，像素标准差，在列方向上平均值不为零的像素数量，在行方向上平均值不为零的像素数量，列方向上的像素最大平均值，行方向上的像素最大平均值。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;feat &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        (img_ &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sum(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 非零像素的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        (img_ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sum(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 零像素的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 平均值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;std(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 标准差&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        len(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;where(img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;))[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]),  &lt;span style=&#34;color:#75715e&#34;&gt;# 在列方向上平均值不为零的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        len(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;where(img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;))[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]),  &lt;span style=&#34;color:#75715e&#34;&gt;# 在行方向上平均值不为零的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;max(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 列方向上的最大平均值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;max()  &lt;span style=&#34;color:#75715e&#34;&gt;# 行方向上的最大平均值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    ]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;之后对于每个数据，保存其特征和类别于一个列表中。&lt;/p&gt;
+&lt;h3 id=&#34;模型训练&#34;&gt;模型训练&lt;/h3&gt;
+&lt;p&gt;对训练集进行30次特征提取，每次提取的特征和类别都添加到&lt;code&gt;train_feat&lt;/code&gt;中，每次提取每个图片的10个通道，每个通道8个特征。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):  &lt;span style=&#34;color:#75715e&#34;&gt;# 30次特征提取&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    print(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;正在提取第&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;{}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;个样本的特征&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(i))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; path &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; train_path:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        train_feat&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(extract_feature(path))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 其中extract_feature(path)函数提取图片特征&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;与此同时对测试集同样进行特征提取，以待后续预测中的使用。&lt;/p&gt;
+&lt;p&gt;建立逻辑回归模型，这种回归方式对线性关系的拟合效果较好，将特征和类别输入其中进行训练。逻辑回归可以直接通过sklearn进行调用：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; sklearn.linear_model &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; LogisticRegression
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;m &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; LogisticRegression(max_iter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;m&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;fit(
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# [:, :-1] 表示取所有行，去掉最后一列&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;array(train_feat)[:, :&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;astype(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;float32),  &lt;span style=&#34;color:#75715e&#34;&gt;# 特征&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;array(train_feat)[:, &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;]  &lt;span style=&#34;color:#75715e&#34;&gt;# 类别&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;预测结果&#34;&gt;预测结果&lt;/h3&gt;
+&lt;p&gt;在预测时，将测试集提取的特征输入训练过的逻辑回归模型中，得到预测结果。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;test_pred &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; m&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;predict(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;array(test_feat)[:, :&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;astype(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;float32))
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;因为测试集也提取了多次特征，因此可以得到多个预测结果，此时通过判断哪类的预测在结果中占比较高而选择哪类。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;test_pred_label &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [Counter(x)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;most_common(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; x &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; test_pred]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;最终正确率基本只有50%，因此需要对其进行改进。一种改进是在该方法的基础上优化数据，提高采样量(即对每个图像选取多个通道或增加特征提取的次数)；另外一种方法是采用深度学习的方法进行分类。&lt;/p&gt;
+&lt;h3 id=&#34;baseline改进&#34;&gt;baseline改进&lt;/h3&gt;
+&lt;p&gt;由于发现数据集的三维图片上，除了大脑的pen图像黑框占比较大，黑框对结果的影响较大，这里我想了一些方法：&lt;/p&gt;
+&lt;p&gt;遍历图像，找到”大脑“出现的阈值，将其裁剪使得其正好被正方形框围住，但因为数据大小不同，这样裁剪出来最后图像的大小不同&amp;hellip;想了很多方法，最后使用了随机裁剪方法，见图像中”大脑“部分占整个图像的一半以上，这里我将图像的随机选出10个通道进行了裁剪，使用逻辑回归模型训练，正确率达到了接近0.6.&lt;/p&gt;
+&lt;p&gt;决策树回归模型：逻辑回归对于线性关系建模效果较好，于是我使用决策树模型，跑出来居然全是MCI emmmmm🤣🤣，勇夺零分。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

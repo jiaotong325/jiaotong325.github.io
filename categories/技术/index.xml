@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>技术 on jiaotong</title>
+    <link>https://jiaotong.me/categories/%E6%8A%80%E6%9C%AF/</link>
+    <description>Recent content in 技术 on jiaotong</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 22 Jul 2023 12:59:23 +0000</lastBuildDate>
+    
+	<atom:link href="https://jiaotong.me/categories/%E6%8A%80%E6%9C%AF/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Pen</title>
+      <link>https://jiaotong.me/post/pen/</link>
+      <pubDate>Sat, 22 Jul 2023 12:59:23 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/post/pen/</guid>
+      <description>&lt;h1 id=&#34;脑pet图像分析和疾病预测挑战赛&#34;&gt;脑PET图像分析和疾病预测挑战赛&lt;/h1&gt;
+&lt;h2 id=&#34;概述&#34;&gt;概述&lt;/h2&gt;
+&lt;p&gt;基于脑PET图像的疾病预测，训练集分为NC(健康)和MCI(轻度认知障碍)。通过对数据集进行建模，对轻度认知障碍进行分析和预测。&lt;/p&gt;
+&lt;h2 id=&#34;数据集&#34;&gt;数据集&lt;/h2&gt;
+&lt;p&gt;数据集中图像分为NC组和MCI组，每组25个样本，每个样本是格式为&lt;code&gt;nii&lt;/code&gt;的图像，这种图像是医学三维图像，为处理此类图像可使用python库&lt;code&gt;nibabel&lt;/code&gt;，该库专门用于处理医学图像。&lt;/p&gt;
+&lt;h2 id=&#34;逻辑回归方法--baseline&#34;&gt;逻辑回归方法  baseline&lt;/h2&gt;
+&lt;p&gt;赛题数据集较小，因此使用逻辑回归的传统图像分类算法是个不错的选择。&lt;/p&gt;
+&lt;h3 id=&#34;数据读取&#34;&gt;数据读取&lt;/h3&gt;
+&lt;p&gt;对于nii格式的数据，使用库&lt;code&gt;nibabel&lt;/code&gt;读取：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; nibabel &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; nib
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;img &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; nib&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;load(path)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;nib.load()会返回一个numpy中的array数组。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;img &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; img&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;dataobj[:, :, :, &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# print(img.shape)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 随机筛选其中的10个通道提取特征&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;random_img &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; img[:, :, np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;random&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;choice(range(img&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;shape[&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;]), &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;)]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;特征提取&#34;&gt;特征提取&lt;/h3&gt;
+&lt;p&gt;查看该数组的shape为四维数据，最后一维数据仅为1，故将其转换为三维数据，选取第一个通道的数据；在三位图像中随机选取10个通道的二维图像提取数据。&lt;/p&gt;
+&lt;p&gt;观察图像，选取特征值，取特征8个作为训练与判断的标准，分别是：非零像素的数量，零像素的数量，像素平均值，像素标准差，在列方向上平均值不为零的像素数量，在行方向上平均值不为零的像素数量，列方向上的像素最大平均值，行方向上的像素最大平均值。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;feat &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        (img_ &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sum(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 非零像素的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        (img_ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;sum(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 零像素的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 平均值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;std(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 标准差&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        len(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;where(img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;))[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]),  &lt;span style=&#34;color:#75715e&#34;&gt;# 在列方向上平均值不为零的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        len(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;where(img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;))[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;]),  &lt;span style=&#34;color:#75715e&#34;&gt;# 在行方向上平均值不为零的数量&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;max(),  &lt;span style=&#34;color:#75715e&#34;&gt;# 列方向上的最大平均值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        img_&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;mean(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;max()  &lt;span style=&#34;color:#75715e&#34;&gt;# 行方向上的最大平均值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    ]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;之后对于每个数据，保存其特征和类别于一个列表中。&lt;/p&gt;
+&lt;h3 id=&#34;模型训练&#34;&gt;模型训练&lt;/h3&gt;
+&lt;p&gt;对训练集进行30次特征提取，每次提取的特征和类别都添加到&lt;code&gt;train_feat&lt;/code&gt;中，每次提取每个图片的10个通道，每个通道8个特征。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; i &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; range(&lt;span style=&#34;color:#ae81ff&#34;&gt;30&lt;/span&gt;):  &lt;span style=&#34;color:#75715e&#34;&gt;# 30次特征提取&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    print(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;正在提取第&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;{}&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;个样本的特征&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;format(i))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; path &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; train_path:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;        train_feat&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(extract_feature(path))
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 其中extract_feature(path)函数提取图片特征&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;与此同时对测试集同样进行特征提取，以待后续预测中的使用。&lt;/p&gt;
+&lt;p&gt;建立逻辑回归模型，这种回归方式对线性关系的拟合效果较好，将特征和类别输入其中进行训练。逻辑回归可以直接通过sklearn进行调用：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; sklearn.linear_model &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; LogisticRegression
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;m &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; LogisticRegression(max_iter&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;m&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;fit(
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# [:, :-1] 表示取所有行，去掉最后一列&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;array(train_feat)[:, :&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;astype(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;float32),  &lt;span style=&#34;color:#75715e&#34;&gt;# 特征&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;array(train_feat)[:, &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;]  &lt;span style=&#34;color:#75715e&#34;&gt;# 类别&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;预测结果&#34;&gt;预测结果&lt;/h3&gt;
+&lt;p&gt;在预测时，将测试集提取的特征输入训练过的逻辑回归模型中，得到预测结果。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;test_pred &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; m&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;predict(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;array(test_feat)[:, :&lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;astype(np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;float32))
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;因为测试集也提取了多次特征，因此可以得到多个预测结果，此时通过判断哪类的预测在结果中占比较高而选择哪类。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;test_pred_label &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; [Counter(x)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;most_common(&lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;)[&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;][&lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;] &lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; x &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; test_pred]
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;最终正确率基本只有50%，因此需要对其进行改进。一种改进是在该方法的基础上优化数据，提高采样量(即对每个图像选取多个通道或增加特征提取的次数)；另外一种方法是采用深度学习的方法进行分类。&lt;/p&gt;
+&lt;h3 id=&#34;baseline改进&#34;&gt;baseline改进&lt;/h3&gt;
+&lt;p&gt;由于发现数据集的三维图片上，除了大脑的pen图像黑框占比较大，黑框对结果的影响较大，这里我想了一些方法：&lt;/p&gt;
+&lt;p&gt;遍历图像，找到”大脑“出现的阈值，将其裁剪使得其正好被正方形框围住，但因为数据大小不同，这样裁剪出来最后图像的大小不同&amp;hellip;想了很多方法，最后使用了随机裁剪方法，见图像中”大脑“部分占整个图像的一半以上，这里我将图像的随机选出10个通道进行了裁剪，使用逻辑回归模型训练，正确率达到了接近0.6.&lt;/p&gt;
+&lt;p&gt;决策树回归模型：逻辑回归对于线性关系建模效果较好，于是我使用决策树模型，跑出来居然全是MCI emmmmm🤣🤣，勇夺零分。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>航空公司客户价值分析</title>
+      <link>https://jiaotong.me/post/kmeans/</link>
+      <pubDate>Fri, 26 May 2023 18:02:11 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/post/kmeans/</guid>
+      <description>&lt;h1 id=&#34;航空公司客户价值分析&#34;&gt;航空公司客户价值分析&lt;/h1&gt;
+&lt;h2 id=&#34;原理分析&#34;&gt;原理分析&lt;/h2&gt;
+&lt;p&gt;在市场竞争上，对于航空公司而言，需要航空公司对客户进行竞争。这就需要航空公司对用户进行分类，得到用户的用户价值，从而有针对性地对用户投放资源。&lt;/p&gt;
+&lt;h3 id=&#34;rfm模型&#34;&gt;RFM模型&lt;/h3&gt;
+&lt;p&gt;RFM模型是利用通用交易环节中最核心的三个维度——最近消费(Recency)、消费频率(Frequency)、消费金额(Monetary)细分客户群体，从而分析不同群体的客户价值。&lt;/p&gt;
+&lt;h3 id=&#34;lrfcm模型&#34;&gt;LRFCM模型&lt;/h3&gt;
+&lt;p&gt;RPM模型并不适合所有行业，那么就需要在RFM模型的基础上添加指标以提高模型更高的拟合度。添加2个指标用于客户分群与价值分析，得到航空行业的LRFMC模型：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;L：入会时间距观测窗口结束的月数(可能的活跃时长) = 观测窗口结束时间 - 入会时间 = LOAD_TIME - FFP_DATE&lt;/li&gt;
+&lt;li&gt;R：客户最近一次乘坐公司飞机距观测窗口结束的月数(当前活跃状态) = LAST_TO_END&lt;/li&gt;
+&lt;li&gt;F：客户在观测窗口内乘坐公司飞机的次数 = FLIGHT_COUNT&lt;/li&gt;
+&lt;li&gt;M：客户在观测窗口内累计的飞行里程(依赖性) = SEG_KM_SUM&lt;/li&gt;
+&lt;li&gt;C：客户在观测窗口内折扣系数的平均值(客户价值) = avg_discount&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;k-means聚类算法&#34;&gt;K-Means聚类算法&lt;/h3&gt;
+&lt;p&gt;K-Means聚类算法是一种无监督学习方法。聚类算法能够找到不同数据之间的相似性，将数据集分割成不同的类或簇。&lt;/p&gt;
+&lt;p&gt;K-Means聚类算法的主要步骤是：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;首先要事先确定划分的簇数K，并随机生成每个簇的中心点。&lt;/li&gt;
+&lt;li&gt;遍历数据集中的每个数据，计算其到K个簇中心点的欧几里得距离取最小者，将该数据加入该中心点所代表的簇中。&lt;/li&gt;
+&lt;li&gt;当簇中加入了数据，此时便能够更新K个簇的中心位置。&lt;/li&gt;
+&lt;li&gt;当更新完毕中心位置之后，重复步骤2.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;对于理解该算法的一个可视化过程如下：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;./photo/1.png&#34; alt=&#34;1&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;./photo/2.png&#34; alt=&#34;1&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;./photo/3.png&#34; alt=&#34;1&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;./photo/4.png&#34; alt=&#34;1&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;./photo/5.png&#34; alt=&#34;1&#34;&gt;&lt;/p&gt;
+&lt;p&gt;该过程源自网站：https://www.naftaliharris.com/blog/visualizing-k-means-clustering/&lt;/p&gt;
+&lt;p&gt;我们可以看到K-Means算法需要我们预先设定K值，对于较为复杂的数据该算法表现差强人意，如图&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;./photo/6.png&#34; alt=&#34;1&#34;&gt;&lt;/p&gt;
+&lt;p&gt;且中心点初值的选择也会影响最终的结果，这里我们会进行多次计算求平均值。&lt;/p&gt;
+&lt;p&gt;我们还需要一个标准来衡量聚类结果的好坏以及在不能直观判断数据的簇数K时，如何选择K值。&lt;/p&gt;
+&lt;h3 id=&#34;肘部法&#34;&gt;肘部法&lt;/h3&gt;
+&lt;p&gt;根据评价指标inertia_，该指标表示每个样本点到其所在簇中心的距离之和。inertia_值越小则表示聚类效果越好。但当K值不断增大时，inertia_也必然减小，这是因为簇数增多，必将不断细分样本，样本点到簇中心的距离之和必然减小。因此我们可以找寻一个拐点，在该点之前inertia_减小得较快，在该点之后inertia_减小得较慢。&lt;/p&gt;
+&lt;h3 id=&#34;轮廓系数法&#34;&gt;轮廓系数法&lt;/h3&gt;
+&lt;p&gt;轮廓系数silhouette_score，该指标用于表示同一个聚类内部的样本密集，不同聚类之间样本疏远的程度。轮廓系数结合了内聚度和分离度两个因素，其公式如下：
+$$
+s(i)=\frac{b(i)-a(i)}{max(a(i),b(i))}
+$$
+其中a(i)表示样本点i到同簇其他样本点距离的平均值，b(i)表示样本点i到其他簇所有点平均距离的最小值。&lt;/p&gt;
+&lt;p&gt;取值范围为[-1, 1]，越靠近1表示聚类效果越好，接近0代表样本i处在两个簇的边界上，越接近-1表示样本i分类错误。&lt;/p&gt;
+&lt;p&gt;也就是说我们需要找到一个较为大的silhouette_score下的K值。&lt;/p&gt;
+&lt;h2 id=&#34;数据清洗&#34;&gt;数据清洗&lt;/h2&gt;
+&lt;p&gt;在进行聚类之前，需要对数据进行清洗。对于一些重要的的数据，需要判断其是否有缺失，有缺失，将数据舍弃。再判断是否有异常数据，将异常数据删除后才可用来聚类训练。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 去除票价为空的记录&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;exp1 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; airline_data[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SUM_YR_1&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;notnull()  &lt;span style=&#34;color:#75715e&#34;&gt;# 返回布尔值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;exp2 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; airline_data[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;SUM_YR_2&amp;#34;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;notnull()
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;exp &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; exp1 &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; exp2  &lt;span style=&#34;color:#75715e&#34;&gt;# &amp;amp;是逻辑与运算符，合并结果&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;print(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;exp的形状是：&amp;#39;&lt;/span&gt;, exp&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;shape)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;airline_notnull &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; airline_data&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;loc[exp, :]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# loc是基于行标签和列标签（x_label、y_label）进行索引&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# loc[exp, :]表示选取exp为True的行，所有列&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;print(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;删除缺失记录后数据的形状为：&amp;#39;&lt;/span&gt;, airline_notnull&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;shape)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# 只保留票价非零的，或者平均折扣率不为0且总飞行公里数大于0的记录。&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;index1 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; airline_notnull[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SUM_YR_1&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;index2 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; airline_notnull[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SUM_YR_2&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;index3 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; (airline_notnull[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;SEG_KM_SUM&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; \
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;             (airline_notnull[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;avg_discount&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;!=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;airline &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; airline_notnull[(index1 &lt;span style=&#34;color:#f92672&#34;&gt;|&lt;/span&gt; index2) &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; index3]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;print(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;删除异常记录后数据的形状为：&amp;#39;&lt;/span&gt;, airline&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;shape)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;建立rfm和lrfcm模型数据&#34;&gt;建立RFM和LRFCM模型数据&lt;/h2&gt;
+&lt;p&gt;选取和构造对应特征的变量并加以储存成&lt;code&gt;.npz&lt;/code&gt;格式&lt;/p&gt;
+&lt;h2 id=&#34;k-means算法&#34;&gt;K-Means算法&lt;/h2&gt;
+&lt;p&gt;在&lt;code&gt;scikit learn&lt;/code&gt;库中提供了K-Means聚类算法的相关方法。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; sklearn.cluster &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; KMeans
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# n_clusters参数表示分成的簇数，需要传入；n_init参数表示用不同的初始化质心运行算法的次数，最后根据inertia_确立最好的结果；random_state为随机数种子&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kmeans_model &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; KMeans(n_clusters&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;k, n_init&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;5&lt;/span&gt;, random_state&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;123&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;fit_kmeans &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; kmeans_model&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;fit(airline_scale)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;确立k值&#34;&gt;确立K值&lt;/h2&gt;
+&lt;p&gt;通过肘部法和轮廓系数法绘制出对应图像，根据图像特点选择较为合适的K值。这里我将计算K取[2,10)聚类的结果进行比较：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; sklearn.metrics &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; silhouette_score
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;K &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; range(&lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;, &lt;span style=&#34;color:#ae81ff&#34;&gt;10&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;sse_result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;silhouette_result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; []
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;for&lt;/span&gt; k &lt;span style=&#34;color:#f92672&#34;&gt;in&lt;/span&gt; K:
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    kmeans, s &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; K_means(k, method)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# cdist计算每个样本到聚类中心的距离，取最小值并求和，再除以样本数&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# euclidean用于计算欧几里得距离&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# sse_result.append(sum(np.min(cdist(s, kmeans.cluster_centers_, &amp;#39;euclidean&amp;#39;), axis=1)) / s.shape[0])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# .inertia_能够直接计算出sse的值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    sse_result&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(kmeans&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;inertia_)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#75715e&#34;&gt;# 轮廓系数法选择k值&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    silhouette_result&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;append(silhouette_score(s, kmeans&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;labels_, metric&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;euclidean&amp;#39;&lt;/span&gt;))
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;code&gt;silhouette_score&lt;/code&gt;可以通过sklearn提供的方法计算得出，但数据较大，得到结果所需时间较长，因此将结果保存到文件中。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;np&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;savez(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;../tmp/sse_silhouette_result_&amp;#39;&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; method &lt;span style=&#34;color:#f92672&#34;&gt;+&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;.npz&amp;#39;&lt;/span&gt;, sse_result, silhouette_result)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;之后再读取文件内容绘制SSE-K图和silhouette_score-K图。&lt;/p&gt;
+&lt;h2 id=&#34;制定营销策略&#34;&gt;制定营销策略&lt;/h2&gt;
+&lt;p&gt;得到雷达图如图所示。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;./photo/leda.png&#34; alt=&#34;1&#34;&gt;&lt;/p&gt;
+&lt;p&gt;将客户分为四类制图如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;客户群&lt;/th&gt;
+&lt;th&gt;会员时长L&lt;/th&gt;
+&lt;th&gt;最近乘机R&lt;/th&gt;
+&lt;th&gt;乘机次数F&lt;/th&gt;
+&lt;th&gt;飞行里程M&lt;/th&gt;
+&lt;th&gt;平均折扣C&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;class_1&lt;/td&gt;
+&lt;td&gt;⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐⭐⭐&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;class_2&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;class_3&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;class_4&lt;/td&gt;
+&lt;td&gt;⭐⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;class_5&lt;/td&gt;
+&lt;td&gt;⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;class_6&lt;/td&gt;
+&lt;td&gt;⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐⭐⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐⭐⭐⭐&lt;/td&gt;
+&lt;td&gt;⭐⭐&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;class_1：该群体入会时间较长享受平均折扣高.&lt;/p&gt;
+&lt;p&gt;class_2：该群体入会时间短，最近乘机时间距今较短，乘机次数少，飞行里程短，平均折扣低，群体人数也最大，属于大众客户。需要航空公司在资源有余且允许的情况下加大投入。&lt;/p&gt;
+&lt;p&gt;class_3：该最近乘机时间据今较长，但乘机次数少，此类用户占比也较大，与大众客户类似，但最近并没有消费，公司应该给予较高优惠挽留客户。&lt;/p&gt;
+&lt;p&gt;class_4：该群体入会时间长，最近乘机时间距今较短，乘机次数少，飞行里程短，此类客户可能属于已流失客户。&lt;/p&gt;
+&lt;p&gt;class_5：该群体入会时间较长，最近乘机时间距今较短，乘机次数较多，但折扣较低，此类用户有很大发展潜力，航空公司应该给予较大资源倾斜，提高用户粘性。&lt;/p&gt;
+&lt;p&gt;class_6：该群体入会时间较长，最近乘机时间距今较短，乘机次数多，飞行里程长，但折扣较低，此类用户消费频繁，航空公司保持这类用户，提高用户粘性。&lt;/p&gt;
+&lt;p&gt;具体代码可见后续更新&amp;hellip;&amp;hellip;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>vim打造</title>
+      <link>https://jiaotong.me/post/vim/</link>
+      <pubDate>Fri, 05 Aug 2022 22:29:37 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/post/vim/</guid>
+      <description>&lt;h1 id=&#34;vim打造&#34;&gt;vim打造&lt;/h1&gt;
+&lt;p&gt;作为一款强大的编辑器，原版的vim居然没有自动补全、自动缩进等功能。因此呢，打造一款超越vscode，且属于自己的代码编辑器vim就必须安装些插件了。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&#34;https://vimawesome.com/&#34;&gt;Vim Awesome&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;该网站提供了很多vim插件供你选择&lt;/p&gt;
+&lt;h2 id=&#34;安装vimplug&#34;&gt;安装vimPlug&lt;/h2&gt;
+&lt;p&gt;vimPlug是vim的一个智能插件管理工具，使用vimPlug可以让你几乎只要一条命令就能方便的安装一个vim插件。&lt;/p&gt;
+&lt;p&gt;在家目录中创建./.vim/autoload/&lt;/p&gt;
+&lt;p&gt;进入下载&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;curl -fLo ~/.vim/autoload/plug.vim --create-dirs &lt;span style=&#34;color:#ae81ff&#34;&gt;\
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;&lt;/span&gt;    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;安装插件&#34;&gt;安装插件&lt;/h2&gt;
+&lt;p&gt;我们在家目录创建文件.vimrc&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;touch .vimrc
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;并键入：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;call plug#begin&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;~/.vim/plugged&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;call plug#end&lt;span style=&#34;color:#f92672&#34;&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;以后我们安装插件时，只需在这两句话之间 Plug &amp;lsquo;plug_name&amp;rsquo;，保存后在普通模式下用命令&lt;code&gt;:PlugInstall&lt;/code&gt;即可安装所有插件。&lt;/p&gt;
+&lt;h2 id=&#34;插件分享&#34;&gt;插件分享&lt;/h2&gt;
+&lt;p&gt;此后我会探索一些好用的插件，并在此地分享：&lt;/p&gt;
+&lt;p&gt;seoul256主题&lt;/p&gt;
+&lt;p&gt;未完待续&amp;hellip;&amp;hellip;&lt;/p&gt;
+&lt;h3 id=&#34;自动补全插件的安装&#34;&gt;自动补全插件的安装&lt;/h3&gt;
+&lt;p&gt;本来我想使用YouYouCompleteMe的，但奈何这插件所需环境太难配置，遂弃之用了coc-nvim。&lt;/p&gt;
+&lt;p&gt;coc-nvim也是一款自动补全插件。&lt;/p&gt;
+&lt;h4 id=&#34;确认vim版本&#34;&gt;确认vim版本&lt;/h4&gt;
+&lt;p&gt;在安装coc-nvim之前需要确认vim版本大于8.1。&lt;/p&gt;
+&lt;p&gt;需要升级时，先要卸载原先的vim版本&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;yum -y remove vim
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;在github上找到新版vim，可以找到vim9.0.0236并下载&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;wget -O vim9.0.0236.zip https://github.com/vim/vim/archive/v9.0.0236.zip
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;之后可用unzip解压安装包&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;unzip vim9.0.0236.zip
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;此时进入vim9.0.0236目录下的./src目录并执行以下命令安装&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;./configure --prefix&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;/usr/local/vim9/ --enable-pythoninterp&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;yes --with-python-config-dir&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;/usr/lib64/python2.7/config
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;make &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&amp;amp;&lt;/span&gt; make install
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;此时可能会出现no terminal library found错误&lt;/p&gt;
+&lt;p&gt;解决方法：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;yum -y install ncurses-devel.x86_64
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;并重新执行以上命令&lt;/p&gt;
+&lt;p&gt;之后将vim命令链接到新安装的vim9上&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ln -s /usr/local/vim9/bin/vim /usr/bin/vim
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;安装nodejs和yarn&#34;&gt;安装nodejs和yarn&lt;/h4&gt;
+&lt;p&gt;由于该插件需要nodejs和yarn的支持，故需要安装二者&lt;/p&gt;
+&lt;p&gt;nodejs的安装略&amp;hellip;&lt;/p&gt;
+&lt;p&gt;yarn的安装：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;npm install -g yarn
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd ~/.vim/plugged/coc.nvim
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;yarn install
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h4 id=&#34;安装clangd&#34;&gt;安装clangd&lt;/h4&gt;
+&lt;p&gt;可在GitHub中下载clangd的zip包并解压至安装目录。&lt;/p&gt;
+&lt;p&gt;clangd下载地址如下：&lt;a href=&#34;https://github.com/clangd/clangd/releases&#34;&gt;clangd/clangd: clangd language server (github.com)&lt;/a&gt;&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;wget https://github.com/clangd/clangd/releases/download/14.0.3/clangd-linux-14.0.3.zip
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;unzip clangd-linux-14.0.3.zip
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;之后只需找到解压后包里的clangd二进制文件并建立软链接&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd ./clangd-linux-14.0.3/bin
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;//其中包含文件clangd
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;ln -s /opt/clangd/bin /usr/local/bin/
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;此时键入clangdb命令若包含clangd的信息则说明安装成功&lt;/p&gt;
+&lt;h4 id=&#34;自动补全cc&#34;&gt;自动补全C/C++&lt;/h4&gt;
+&lt;p&gt;有两种方案&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;安装coc-clangd插件，在.vimrc文件命令模式下键入&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;：CocInstall coc-clangd
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;在.vimrc文件命令模式下键入&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;:CocConfig
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;进入coc-settings.json文件中，输入&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;{
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;languageserver&amp;#34;&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;clangd&amp;#34;&lt;/span&gt;: {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;command&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;clangd&amp;#34;&lt;/span&gt;,
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;rootPatterns&amp;#34;&lt;/span&gt;: [&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;compile_flags.txt&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;compile_commands.json&amp;#34;&lt;/span&gt;],
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;filetypes&amp;#34;&lt;/span&gt;: [&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;c&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;cc&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;cpp&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;c++&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;objc&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;objcpp&amp;#34;&lt;/span&gt;]
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    }
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    }
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;保存并退出即可完成&lt;/p&gt;
+&lt;h4 id=&#34;其他设置&#34;&gt;其他设置&lt;/h4&gt;
+&lt;p&gt;关于cocnvim的其他设置，包括我的一些其他插件以及键位设置（cocnvim下载配置完成后不能直接使用，需要配置一番）会上传到我的GitHub上。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	
+	<title>jiaotong  | Pen</title>
+	<meta name="viewport" content="width=device-width,minimum-scale=1">
+	<meta name="generator" content="Hugo 0.113.0">
+	
+	
+	<META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+	
+
+	
+	
+	<link href="/dist/app.css" rel="stylesheet">
+	
+
+	
+
+	
+	
+<link rel="shortcut icon" href="https://jiaotong.me/img/favicon.ico" type="image/png/x-icon" />
+
+
+	
+
+	
+	
+	
+	
+	
+	<script>
+		(function (u, c) {
+			var d = document,
+				t = 'script',
+				o = d.createElement(t),
+				s = d.getElementsByTagName(t)[0];
+			o.src = u;
+			if (c) {
+				o.addEventListener('load', function (e) {
+					c(e);
+				});
+			}
+			s.parentNode.insertBefore(o, s);
+		})('https:\/\/jiaotong.me\/lib\/pangu.min.js', function () {
+			pangu.spacingPage();
+		});
+	</script>
+	
+	
+	
+</head>
+
+<body class="bg-gray-100 text-gray-700 font-sans">
+	<div class="p-6 sm:p-10 md:p-16 flex flex-wrap">
+		<header class="w-full md:w-2/5 xl:w-1/2 md:pr-12 lg:pr-20 xl:pr-24 order-1 md:order-1 max-w-2xl">
+			<div
+				class="z-50 bg-gray-100 bg-opacity-75 bg-opacity-custom lg:min-w-0.7 max-w-xl md:float-right md:text-right leading-loose tracking-tight md:sticky md:top-0 pt-2">
+				
+<div>
+	<h2>
+		<a href="https://jiaotong.me" title="jiaotong" class="heading font-cursive icon">jiaotong</a>
+	</h2>
+</div>
+<h1 class="pt-2">Pen</h1>
+
+<div class="flex flex-wrap justify-end pt-2 "><div class="md:flex-grow-0 font-light">
+	
+	
+	
+	
+	<a class="post-taxonomy-category text-medium-red-violet-600 hover:text-medium-red-violet-400"
+		href='/categories/%E6%8A%80%E6%9C%AF'>技术</a>
+	
+	
+	
+
+	
+	&nbsp;&nbsp;
+	
+
+	
+	
+	
+	
+	<a class="post-taxonomy-tag text-eucalyptus-500"
+		href='/tags/cv'>cv</a>&nbsp;&#47;
+	
+	<a class="post-taxonomy-tag text-eucalyptus-500"
+		href='/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0'>机器学习</a>&nbsp;&#47;
+	
+	<a class="post-taxonomy-tag text-eucalyptus-500"
+		href='/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0'>深度学习</a>
+	
+	
+	
+</div><time class="text-eucalyptus-500 md:text-right md:flex-grow font-light pl-4"
+		datetime="2023-07-22T12:59:23Z">2023-7-22 12:59</time>
+</div>
+
+<hr />
+
+
+			</div>
+		</header>
+		<main role="main" class="w-full md:w-3/5 xl:w-1/2 max-w-3xl order-2 md:order-2 min-h-70vh pt-2 pb-4">
+			
+
+<article>
+	<section class="mx-auto content">
+		<div class="c-rich-text"><h1 id="脑pet图像分析和疾病预测挑战赛">脑PET图像分析和疾病预测挑战赛</h1>
+<h2 id="概述">概述</h2>
+<p>基于脑PET图像的疾病预测，训练集分为NC(健康)和MCI(轻度认知障碍)。通过对数据集进行建模，对轻度认知障碍进行分析和预测。</p>
+<h2 id="数据集">数据集</h2>
+<p>数据集中图像分为NC组和MCI组，每组25个样本，每个样本是格式为<code>nii</code>的图像，这种图像是医学三维图像，为处理此类图像可使用python库<code>nibabel</code>，该库专门用于处理医学图像。</p>
+<h2 id="逻辑回归方法--baseline">逻辑回归方法  baseline</h2>
+<p>赛题数据集较小，因此使用逻辑回归的传统图像分类算法是个不错的选择。</p>
+<h3 id="数据读取">数据读取</h3>
+<p>对于nii格式的数据，使用库<code>nibabel</code>读取：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> nibabel <span style="color:#66d9ef">as</span> nib
+</span></span><span style="display:flex;"><span>img <span style="color:#f92672">=</span> nib<span style="color:#f92672">.</span>load(path)
+</span></span></code></pre></div><p>nib.load()会返回一个numpy中的array数组。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>img <span style="color:#f92672">=</span> img<span style="color:#f92672">.</span>dataobj[:, :, :, <span style="color:#ae81ff">0</span>]
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># print(img.shape)</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 随机筛选其中的10个通道提取特征</span>
+</span></span><span style="display:flex;"><span>random_img <span style="color:#f92672">=</span> img[:, :, np<span style="color:#f92672">.</span>random<span style="color:#f92672">.</span>choice(range(img<span style="color:#f92672">.</span>shape[<span style="color:#ae81ff">2</span>]), <span style="color:#ae81ff">10</span>)]
+</span></span></code></pre></div><h3 id="特征提取">特征提取</h3>
+<p>查看该数组的shape为四维数据，最后一维数据仅为1，故将其转换为三维数据，选取第一个通道的数据；在三位图像中随机选取10个通道的二维图像提取数据。</p>
+<p>观察图像，选取特征值，取特征8个作为训练与判断的标准，分别是：非零像素的数量，零像素的数量，像素平均值，像素标准差，在列方向上平均值不为零的像素数量，在行方向上平均值不为零的像素数量，列方向上的像素最大平均值，行方向上的像素最大平均值。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>feat <span style="color:#f92672">=</span> [
+</span></span><span style="display:flex;"><span>        (img_ <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>sum(),  <span style="color:#75715e"># 非零像素的数量</span>
+</span></span><span style="display:flex;"><span>        (img_ <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>sum(),  <span style="color:#75715e"># 零像素的数量</span>
+</span></span><span style="display:flex;"><span>        img_<span style="color:#f92672">.</span>mean(),  <span style="color:#75715e"># 平均值</span>
+</span></span><span style="display:flex;"><span>        img_<span style="color:#f92672">.</span>std(),  <span style="color:#75715e"># 标准差</span>
+</span></span><span style="display:flex;"><span>        len(np<span style="color:#f92672">.</span>where(img_<span style="color:#f92672">.</span>mean(<span style="color:#ae81ff">0</span>))[<span style="color:#ae81ff">0</span>]),  <span style="color:#75715e"># 在列方向上平均值不为零的数量</span>
+</span></span><span style="display:flex;"><span>        len(np<span style="color:#f92672">.</span>where(img_<span style="color:#f92672">.</span>mean(<span style="color:#ae81ff">1</span>))[<span style="color:#ae81ff">0</span>]),  <span style="color:#75715e"># 在行方向上平均值不为零的数量</span>
+</span></span><span style="display:flex;"><span>        img_<span style="color:#f92672">.</span>mean(<span style="color:#ae81ff">0</span>)<span style="color:#f92672">.</span>max(),  <span style="color:#75715e"># 列方向上的最大平均值</span>
+</span></span><span style="display:flex;"><span>        img_<span style="color:#f92672">.</span>mean(<span style="color:#ae81ff">1</span>)<span style="color:#f92672">.</span>max()  <span style="color:#75715e"># 行方向上的最大平均值</span>
+</span></span><span style="display:flex;"><span>    ]
+</span></span></code></pre></div><p>之后对于每个数据，保存其特征和类别于一个列表中。</p>
+<h3 id="模型训练">模型训练</h3>
+<p>对训练集进行30次特征提取，每次提取的特征和类别都添加到<code>train_feat</code>中，每次提取每个图片的10个通道，每个通道8个特征。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">30</span>):  <span style="color:#75715e"># 30次特征提取</span>
+</span></span><span style="display:flex;"><span>    print(<span style="color:#e6db74">&#34;正在提取第</span><span style="color:#e6db74">{}</span><span style="color:#e6db74">个样本的特征&#34;</span><span style="color:#f92672">.</span>format(i))
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> path <span style="color:#f92672">in</span> train_path:
+</span></span><span style="display:flex;"><span>        train_feat<span style="color:#f92672">.</span>append(extract_feature(path))
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 其中extract_feature(path)函数提取图片特征</span>
+</span></span></code></pre></div><p>与此同时对测试集同样进行特征提取，以待后续预测中的使用。</p>
+<p>建立逻辑回归模型，这种回归方式对线性关系的拟合效果较好，将特征和类别输入其中进行训练。逻辑回归可以直接通过sklearn进行调用：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">from</span> sklearn.linear_model <span style="color:#f92672">import</span> LogisticRegression
+</span></span><span style="display:flex;"><span>m <span style="color:#f92672">=</span> LogisticRegression(max_iter<span style="color:#f92672">=</span><span style="color:#ae81ff">1000</span>)
+</span></span><span style="display:flex;"><span>m<span style="color:#f92672">.</span>fit(
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># [:, :-1] 表示取所有行，去掉最后一列</span>
+</span></span><span style="display:flex;"><span>    np<span style="color:#f92672">.</span>array(train_feat)[:, :<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32),  <span style="color:#75715e"># 特征</span>
+</span></span><span style="display:flex;"><span>    np<span style="color:#f92672">.</span>array(train_feat)[:, <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]  <span style="color:#75715e"># 类别</span>
+</span></span><span style="display:flex;"><span>)
+</span></span></code></pre></div><h3 id="预测结果">预测结果</h3>
+<p>在预测时，将测试集提取的特征输入训练过的逻辑回归模型中，得到预测结果。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>test_pred <span style="color:#f92672">=</span> m<span style="color:#f92672">.</span>predict(np<span style="color:#f92672">.</span>array(test_feat)[:, :<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>astype(np<span style="color:#f92672">.</span>float32))
+</span></span></code></pre></div><p>因为测试集也提取了多次特征，因此可以得到多个预测结果，此时通过判断哪类的预测在结果中占比较高而选择哪类。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>test_pred_label <span style="color:#f92672">=</span> [Counter(x)<span style="color:#f92672">.</span>most_common(<span style="color:#ae81ff">1</span>)[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>] <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> test_pred]
+</span></span></code></pre></div><p>最终正确率基本只有50%，因此需要对其进行改进。一种改进是在该方法的基础上优化数据，提高采样量(即对每个图像选取多个通道或增加特征提取的次数)；另外一种方法是采用深度学习的方法进行分类。</p>
+<h3 id="baseline改进">baseline改进</h3>
+<p>由于发现数据集的三维图片上，除了大脑的pen图像黑框占比较大，黑框对结果的影响较大，这里我想了一些方法：</p>
+<p>遍历图像，找到”大脑“出现的阈值，将其裁剪使得其正好被正方形框围住，但因为数据大小不同，这样裁剪出来最后图像的大小不同&hellip;想了很多方法，最后使用了随机裁剪方法，见图像中”大脑“部分占整个图像的一半以上，这里我将图像的随机选出10个通道进行了裁剪，使用逻辑回归模型训练，正确率达到了接近0.6.</p>
+<p>决策树回归模型：逻辑回归对于线性关系建模效果较好，于是我使用决策树模型，跑出来居然全是MCI emmmmm🤣🤣，勇夺零分。</p>
+</div>
+	</section>
+
+
+</article>
+
+		</main>
+		<div class="w-full h-0 flex-none order-3"></div>
+		<aside role="contentinfo"
+			class="w-full md:w-2/5 xl:w-1/2 md:pr-12 lg:pr-20 xl:pr-24 order-4 md:order-3 md:sticky md:bottom-0 self-end max-w-2xl">
+			<div class="md:float-right md:text-right leading-loose tracking-tight md:mb-2">
+				
+	<div class="md:max-w-xs  flex flex-col md:items-end">
+	<ul class="font-serif flex-grow-0 flex justify-between flex-wrap md:flex-col">
+	
+	
+	<li class="px-1 md:px-0">
+		<a href="/" title="首页 page" 
+			class="font-medium text-medium-red-violet-600 hover:text-medium-red-violet-400" >
+			首页
+		</a>
+	</li>
+	
+	<li class="px-1 md:px-0">
+		<a href="/post/" title="Post page" 
+			class="font-medium text-medium-red-violet-600 hover:text-medium-red-violet-400" >
+			Post
+		</a>
+	</li>
+	
+	<li class="px-1 md:px-0">
+		<a href="/tags/" title="Tags page" >
+			Tags
+		</a>
+	</li>
+	
+	<li class="px-1 md:px-0">
+		<a href="/categories/" title="categories page" >
+			categories
+		</a>
+	</li>
+	
+	
+	
+	
+</ul>
+	
+
+<div class="flex flex-wrap-reverse md:justify-end content-end md:content-start justify-start items-start   max-h-16">
+	
+	
+	
+	
+	<a href='https://github.com/jiaotong325' target="_blank" class="github icon pl-1 text-eucalyptus-400 hover:text-java-400" title="github link" rel="noopener"
+		aria-label="follow on github——Opens in a new window">
+		
+		<div class="fill-current h-8 w-8">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <g>
+        <path fill="none" d="M0 0h24v24H0z"/>
+        <path fill-rule="nonzero" d="M5.883 18.653c-.3-.2-.558-.455-.86-.816a50.32 50.32 0 0 1-.466-.579c-.463-.575-.755-.84-1.057-.949a1 1 0 0 1 .676-1.883c.752.27 1.261.735 1.947 1.588-.094-.117.34.427.433.539.19.227.33.365.44.438.204.137.587.196 1.15.14.023-.382.094-.753.202-1.095C5.38 15.31 3.7 13.396 3.7 9.64c0-1.24.37-2.356 1.058-3.292-.218-.894-.185-1.975.302-3.192a1 1 0 0 1 .63-.582c.081-.024.127-.035.208-.047.803-.123 1.937.17 3.415 1.096A11.731 11.731 0 0 1 12 3.315c.912 0 1.818.104 2.684.308 1.477-.933 2.613-1.226 3.422-1.096.085.013.157.03.218.05a1 1 0 0 1 .616.58c.487 1.216.52 2.297.302 3.19.691.936 1.058 2.045 1.058 3.293 0 3.757-1.674 5.665-4.642 6.392.125.415.19.879.19 1.38a300.492 300.492 0 0 1-.012 2.716 1 1 0 0 1-.019 1.958c-1.139.228-1.983-.532-1.983-1.525l.002-.446.005-.705c.005-.708.007-1.338.007-1.998 0-.697-.183-1.152-.425-1.36-.661-.57-.326-1.655.54-1.752 2.967-.333 4.337-1.482 4.337-4.66 0-.955-.312-1.744-.913-2.404a1 1 0 0 1-.19-1.045c.166-.414.237-.957.096-1.614l-.01.003c-.491.139-1.11.44-1.858.949a1 1 0 0 1-.833.135A9.626 9.626 0 0 0 12 5.315c-.89 0-1.772.119-2.592.35a1 1 0 0 1-.83-.134c-.752-.507-1.374-.807-1.868-.947-.144.653-.073 1.194.092 1.607a1 1 0 0 1-.189 1.045C6.016 7.89 5.7 8.694 5.7 9.64c0 3.172 1.371 4.328 4.322 4.66.865.097 1.201 1.177.544 1.748-.192.168-.429.732-.429 1.364v3.15c0 .986-.835 1.725-1.96 1.528a1 1 0 0 1-.04-1.962v-.99c-.91.061-1.662-.088-2.254-.485z"/>
+    </g>
+</svg>
+
+		</div>
+	</a>
+	
+	
+</div>
+
+	<div class="text-sm text-gray-500 leading-tight a-gray">
+		
+		<br />
+		Built with Hugo and theme <a href="https://github.com/heyeshuang/hugo-theme-tokiwa">Tokiwa</a>. 129 words in this page.
+	</div>
+</div>
+
+			</div>
+		</aside>
+		<footer class="w-full md:w-3/5 xl:w-1/2 order-3 max-w-3xl md:order-4 pt-2">
+			
+<hr class="double-line" />
+<div class="flex flex-wrap justify-between pb-2 leading-loose font-serif">
+    
+    <a class="flex-grow-0" href="/post/kmeans/">
+        <svg class="fill-current inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24"
+            height="24">
+            <path fill="none" d="M0 0h24v24H0z" />
+            <path d="M7.828 11H20v2H7.828l5.364 5.364-1.414 1.414L4 12l7.778-7.778 1.414 1.414z" /></svg>
+        航空公司客户价值分析
+    </a>
+    
+    
+</div>
+<div >
+
+
+
+<div class="font-serif pb-2 flex align-start leading-loose">
+	<span class="heading pr-6 leading-loose">Related</span>
+	<span >
+		
+			<a href="/post/kmeans/">航空公司客户价值分析</a>
+		
+</span>
+</div>
+
+</div>
+<hr />
+<div class="pb-2">
+    
+</div>
+<hr />
+
+		</footer>
+		
+
+<script src="/dist/app.js"></script>
+
+
+	</div>
+</body>
+
+</html>

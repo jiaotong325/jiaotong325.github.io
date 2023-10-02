@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on jiaotong</title>
+    <link>https://jiaotong.me/tags/</link>
+    <description>Recent content in Tags on jiaotong</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sat, 22 Jul 2023 12:59:23 +0000</lastBuildDate>
+    
+	<atom:link href="https://jiaotong.me/tags/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>cv</title>
+      <link>https://jiaotong.me/tags/cv/</link>
+      <pubDate>Sat, 22 Jul 2023 12:59:23 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/tags/cv/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>机器学习</title>
+      <link>https://jiaotong.me/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/</link>
+      <pubDate>Sat, 22 Jul 2023 12:59:23 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>深度学习</title>
+      <link>https://jiaotong.me/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/</link>
+      <pubDate>Sat, 22 Jul 2023 12:59:23 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>vim</title>
+      <link>https://jiaotong.me/tags/vim/</link>
+      <pubDate>Fri, 05 Aug 2022 22:29:37 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/tags/vim/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>环境</title>
+      <link>https://jiaotong.me/tags/%E7%8E%AF%E5%A2%83/</link>
+      <pubDate>Fri, 05 Aug 2022 22:29:37 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/tags/%E7%8E%AF%E5%A2%83/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>博客</title>
+      <link>https://jiaotong.me/tags/%E5%8D%9A%E5%AE%A2/</link>
+      <pubDate>Sat, 09 Jul 2022 11:42:01 +0000</pubDate>
+      
+      <guid>https://jiaotong.me/tags/%E5%8D%9A%E5%AE%A2/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

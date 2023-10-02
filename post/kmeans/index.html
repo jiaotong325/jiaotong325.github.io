@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	
+	<title>jiaotong  | 航空公司客户价值分析</title>
+	<meta name="viewport" content="width=device-width,minimum-scale=1">
+	<meta name="generator" content="Hugo 0.113.0">
+	
+	
+	<META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+	
+
+	
+	
+	<link href="/dist/app.css" rel="stylesheet">
+	
+
+	
+
+	
+	
+<link rel="shortcut icon" href="https://jiaotong.me/img/favicon.ico" type="image/png/x-icon" />
+
+
+	
+
+	
+	
+	
+	
+	
+	<script>
+		(function (u, c) {
+			var d = document,
+				t = 'script',
+				o = d.createElement(t),
+				s = d.getElementsByTagName(t)[0];
+			o.src = u;
+			if (c) {
+				o.addEventListener('load', function (e) {
+					c(e);
+				});
+			}
+			s.parentNode.insertBefore(o, s);
+		})('https:\/\/jiaotong.me\/lib\/pangu.min.js', function () {
+			pangu.spacingPage();
+		});
+	</script>
+	
+	
+	
+</head>
+
+<body class="bg-gray-100 text-gray-700 font-sans">
+	<div class="p-6 sm:p-10 md:p-16 flex flex-wrap">
+		<header class="w-full md:w-2/5 xl:w-1/2 md:pr-12 lg:pr-20 xl:pr-24 order-1 md:order-1 max-w-2xl">
+			<div
+				class="z-50 bg-gray-100 bg-opacity-75 bg-opacity-custom lg:min-w-0.7 max-w-xl md:float-right md:text-right leading-loose tracking-tight md:sticky md:top-0 pt-2">
+				
+<div>
+	<h2>
+		<a href="https://jiaotong.me" title="jiaotong" class="heading font-cursive icon">jiaotong</a>
+	</h2>
+</div>
+<h1 class="pt-2">航空公司客户价值分析</h1>
+
+<h3 class="text-java-700 font-normal leading-relaxed pt-2">利用K-means算法聚类分析</h3>
+
+<div class="flex flex-wrap justify-end pt-2 "><div class="md:flex-grow-0 font-light">
+	
+	
+	
+	
+	<a class="post-taxonomy-category text-medium-red-violet-600 hover:text-medium-red-violet-400"
+		href='/categories/%E6%8A%80%E6%9C%AF'>技术</a>
+	
+	
+	
+
+	
+	&nbsp;&nbsp;
+	
+
+	
+	
+	
+	
+	<a class="post-taxonomy-tag text-eucalyptus-500"
+		href='/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0'>机器学习</a>
+	
+	
+	
+</div><time class="text-eucalyptus-500 md:text-right md:flex-grow font-light pl-4"
+		datetime="2023-05-26T18:02:11Z">2023-5-26 18:02</time>
+</div>
+
+<hr />
+
+
+			</div>
+		</header>
+		<main role="main" class="w-full md:w-3/5 xl:w-1/2 max-w-3xl order-2 md:order-2 min-h-70vh pt-2 pb-4">
+			
+
+<article>
+	<section class="mx-auto content">
+		<div class="c-rich-text"><h1 id="航空公司客户价值分析">航空公司客户价值分析</h1>
+<h2 id="原理分析">原理分析</h2>
+<p>在市场竞争上，对于航空公司而言，需要航空公司对客户进行竞争。这就需要航空公司对用户进行分类，得到用户的用户价值，从而有针对性地对用户投放资源。</p>
+<h3 id="rfm模型">RFM模型</h3>
+<p>RFM模型是利用通用交易环节中最核心的三个维度——最近消费(Recency)、消费频率(Frequency)、消费金额(Monetary)细分客户群体，从而分析不同群体的客户价值。</p>
+<h3 id="lrfcm模型">LRFCM模型</h3>
+<p>RPM模型并不适合所有行业，那么就需要在RFM模型的基础上添加指标以提高模型更高的拟合度。添加2个指标用于客户分群与价值分析，得到航空行业的LRFMC模型：</p>
+<ul>
+<li>L：入会时间距观测窗口结束的月数(可能的活跃时长) = 观测窗口结束时间 - 入会时间 = LOAD_TIME - FFP_DATE</li>
+<li>R：客户最近一次乘坐公司飞机距观测窗口结束的月数(当前活跃状态) = LAST_TO_END</li>
+<li>F：客户在观测窗口内乘坐公司飞机的次数 = FLIGHT_COUNT</li>
+<li>M：客户在观测窗口内累计的飞行里程(依赖性) = SEG_KM_SUM</li>
+<li>C：客户在观测窗口内折扣系数的平均值(客户价值) = avg_discount</li>
+</ul>
+<h3 id="k-means聚类算法">K-Means聚类算法</h3>
+<p>K-Means聚类算法是一种无监督学习方法。聚类算法能够找到不同数据之间的相似性，将数据集分割成不同的类或簇。</p>
+<p>K-Means聚类算法的主要步骤是：</p>
+<ol>
+<li>首先要事先确定划分的簇数K，并随机生成每个簇的中心点。</li>
+<li>遍历数据集中的每个数据，计算其到K个簇中心点的欧几里得距离取最小者，将该数据加入该中心点所代表的簇中。</li>
+<li>当簇中加入了数据，此时便能够更新K个簇的中心位置。</li>
+<li>当更新完毕中心位置之后，重复步骤2.</li>
+</ol>
+<p>对于理解该算法的一个可视化过程如下：</p>
+<p><img src="./photo/1.png" alt="1"></p>
+<p><img src="./photo/2.png" alt="1"></p>
+<p><img src="./photo/3.png" alt="1"></p>
+<p><img src="./photo/4.png" alt="1"></p>
+<p><img src="./photo/5.png" alt="1"></p>
+<p>该过程源自网站：https://www.naftaliharris.com/blog/visualizing-k-means-clustering/</p>
+<p>我们可以看到K-Means算法需要我们预先设定K值，对于较为复杂的数据该算法表现差强人意，如图</p>
+<p><img src="./photo/6.png" alt="1"></p>
+<p>且中心点初值的选择也会影响最终的结果，这里我们会进行多次计算求平均值。</p>
+<p>我们还需要一个标准来衡量聚类结果的好坏以及在不能直观判断数据的簇数K时，如何选择K值。</p>
+<h3 id="肘部法">肘部法</h3>
+<p>根据评价指标inertia_，该指标表示每个样本点到其所在簇中心的距离之和。inertia_值越小则表示聚类效果越好。但当K值不断增大时，inertia_也必然减小，这是因为簇数增多，必将不断细分样本，样本点到簇中心的距离之和必然减小。因此我们可以找寻一个拐点，在该点之前inertia_减小得较快，在该点之后inertia_减小得较慢。</p>
+<h3 id="轮廓系数法">轮廓系数法</h3>
+<p>轮廓系数silhouette_score，该指标用于表示同一个聚类内部的样本密集，不同聚类之间样本疏远的程度。轮廓系数结合了内聚度和分离度两个因素，其公式如下：
+$$
+s(i)=\frac{b(i)-a(i)}{max(a(i),b(i))}
+$$
+其中a(i)表示样本点i到同簇其他样本点距离的平均值，b(i)表示样本点i到其他簇所有点平均距离的最小值。</p>
+<p>取值范围为[-1, 1]，越靠近1表示聚类效果越好，接近0代表样本i处在两个簇的边界上，越接近-1表示样本i分类错误。</p>
+<p>也就是说我们需要找到一个较为大的silhouette_score下的K值。</p>
+<h2 id="数据清洗">数据清洗</h2>
+<p>在进行聚类之前，需要对数据进行清洗。对于一些重要的的数据，需要判断其是否有缺失，有缺失，将数据舍弃。再判断是否有异常数据，将异常数据删除后才可用来聚类训练。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#75715e"># 去除票价为空的记录</span>
+</span></span><span style="display:flex;"><span>exp1 <span style="color:#f92672">=</span> airline_data[<span style="color:#e6db74">&#34;SUM_YR_1&#34;</span>]<span style="color:#f92672">.</span>notnull()  <span style="color:#75715e"># 返回布尔值</span>
+</span></span><span style="display:flex;"><span>exp2 <span style="color:#f92672">=</span> airline_data[<span style="color:#e6db74">&#34;SUM_YR_2&#34;</span>]<span style="color:#f92672">.</span>notnull()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>exp <span style="color:#f92672">=</span> exp1 <span style="color:#f92672">&amp;</span> exp2  <span style="color:#75715e"># &amp;是逻辑与运算符，合并结果</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">&#39;exp的形状是：&#39;</span>, exp<span style="color:#f92672">.</span>shape)
+</span></span><span style="display:flex;"><span>airline_notnull <span style="color:#f92672">=</span> airline_data<span style="color:#f92672">.</span>loc[exp, :]
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># loc是基于行标签和列标签（x_label、y_label）进行索引</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># loc[exp, :]表示选取exp为True的行，所有列</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">&#39;删除缺失记录后数据的形状为：&#39;</span>, airline_notnull<span style="color:#f92672">.</span>shape)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># 只保留票价非零的，或者平均折扣率不为0且总飞行公里数大于0的记录。</span>
+</span></span><span style="display:flex;"><span>index1 <span style="color:#f92672">=</span> airline_notnull[<span style="color:#e6db74">&#39;SUM_YR_1&#39;</span>] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>index2 <span style="color:#f92672">=</span> airline_notnull[<span style="color:#e6db74">&#39;SUM_YR_2&#39;</span>] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span>index3 <span style="color:#f92672">=</span> (airline_notnull[<span style="color:#e6db74">&#39;SEG_KM_SUM&#39;</span>] <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>) <span style="color:#f92672">&amp;</span> \
+</span></span><span style="display:flex;"><span>             (airline_notnull[<span style="color:#e6db74">&#39;avg_discount&#39;</span>] <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>)
+</span></span><span style="display:flex;"><span>airline <span style="color:#f92672">=</span> airline_notnull[(index1 <span style="color:#f92672">|</span> index2) <span style="color:#f92672">&amp;</span> index3]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">&#39;删除异常记录后数据的形状为：&#39;</span>, airline<span style="color:#f92672">.</span>shape)
+</span></span></code></pre></div><h2 id="建立rfm和lrfcm模型数据">建立RFM和LRFCM模型数据</h2>
+<p>选取和构造对应特征的变量并加以储存成<code>.npz</code>格式</p>
+<h2 id="k-means算法">K-Means算法</h2>
+<p>在<code>scikit learn</code>库中提供了K-Means聚类算法的相关方法。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">from</span> sklearn.cluster <span style="color:#f92672">import</span> KMeans
+</span></span><span style="display:flex;"><span><span style="color:#75715e"># n_clusters参数表示分成的簇数，需要传入；n_init参数表示用不同的初始化质心运行算法的次数，最后根据inertia_确立最好的结果；random_state为随机数种子</span>
+</span></span><span style="display:flex;"><span>kmeans_model <span style="color:#f92672">=</span> KMeans(n_clusters<span style="color:#f92672">=</span>k, n_init<span style="color:#f92672">=</span><span style="color:#ae81ff">5</span>, random_state<span style="color:#f92672">=</span><span style="color:#ae81ff">123</span>)
+</span></span><span style="display:flex;"><span>fit_kmeans <span style="color:#f92672">=</span> kmeans_model<span style="color:#f92672">.</span>fit(airline_scale)
+</span></span></code></pre></div><h2 id="确立k值">确立K值</h2>
+<p>通过肘部法和轮廓系数法绘制出对应图像，根据图像特点选择较为合适的K值。这里我将计算K取[2,10)聚类的结果进行比较：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">from</span> sklearn.metrics <span style="color:#f92672">import</span> silhouette_score
+</span></span><span style="display:flex;"><span>K <span style="color:#f92672">=</span> range(<span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">10</span>)
+</span></span><span style="display:flex;"><span>sse_result <span style="color:#f92672">=</span> []
+</span></span><span style="display:flex;"><span>silhouette_result <span style="color:#f92672">=</span> []
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> k <span style="color:#f92672">in</span> K:
+</span></span><span style="display:flex;"><span>    kmeans, s <span style="color:#f92672">=</span> K_means(k, method)
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># cdist计算每个样本到聚类中心的距离，取最小值并求和，再除以样本数</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># euclidean用于计算欧几里得距离</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># sse_result.append(sum(np.min(cdist(s, kmeans.cluster_centers_, &#39;euclidean&#39;), axis=1)) / s.shape[0])</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># .inertia_能够直接计算出sse的值</span>
+</span></span><span style="display:flex;"><span>    sse_result<span style="color:#f92672">.</span>append(kmeans<span style="color:#f92672">.</span>inertia_)
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e"># 轮廓系数法选择k值</span>
+</span></span><span style="display:flex;"><span>    silhouette_result<span style="color:#f92672">.</span>append(silhouette_score(s, kmeans<span style="color:#f92672">.</span>labels_, metric<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;euclidean&#39;</span>))
+</span></span></code></pre></div><p><code>silhouette_score</code>可以通过sklearn提供的方法计算得出，但数据较大，得到结果所需时间较长，因此将结果保存到文件中。</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>np<span style="color:#f92672">.</span>savez(<span style="color:#e6db74">&#39;../tmp/sse_silhouette_result_&#39;</span> <span style="color:#f92672">+</span> method <span style="color:#f92672">+</span> <span style="color:#e6db74">&#39;.npz&#39;</span>, sse_result, silhouette_result)
+</span></span></code></pre></div><p>之后再读取文件内容绘制SSE-K图和silhouette_score-K图。</p>
+<h2 id="制定营销策略">制定营销策略</h2>
+<p>得到雷达图如图所示。</p>
+<p><img src="./photo/leda.png" alt="1"></p>
+<p>将客户分为四类制图如下：</p>
+<table>
+<thead>
+<tr>
+<th>客户群</th>
+<th>会员时长L</th>
+<th>最近乘机R</th>
+<th>乘机次数F</th>
+<th>飞行里程M</th>
+<th>平均折扣C</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>class_1</td>
+<td>⭐⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td>class_2</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+</tr>
+<tr>
+<td>class_3</td>
+<td>⭐</td>
+<td>⭐⭐⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+</tr>
+<tr>
+<td>class_4</td>
+<td>⭐⭐⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+<td>⭐</td>
+</tr>
+<tr>
+<td>class_5</td>
+<td>⭐⭐</td>
+<td>⭐</td>
+<td>⭐⭐⭐</td>
+<td>⭐⭐⭐</td>
+<td>⭐⭐</td>
+</tr>
+<tr>
+<td>class_6</td>
+<td>⭐⭐</td>
+<td>⭐</td>
+<td>⭐⭐⭐⭐⭐</td>
+<td>⭐⭐⭐⭐⭐</td>
+<td>⭐⭐</td>
+</tr>
+</tbody>
+</table>
+<p>class_1：该群体入会时间较长享受平均折扣高.</p>
+<p>class_2：该群体入会时间短，最近乘机时间距今较短，乘机次数少，飞行里程短，平均折扣低，群体人数也最大，属于大众客户。需要航空公司在资源有余且允许的情况下加大投入。</p>
+<p>class_3：该最近乘机时间据今较长，但乘机次数少，此类用户占比也较大，与大众客户类似，但最近并没有消费，公司应该给予较高优惠挽留客户。</p>
+<p>class_4：该群体入会时间长，最近乘机时间距今较短，乘机次数少，飞行里程短，此类客户可能属于已流失客户。</p>
+<p>class_5：该群体入会时间较长，最近乘机时间距今较短，乘机次数较多，但折扣较低，此类用户有很大发展潜力，航空公司应该给予较大资源倾斜，提高用户粘性。</p>
+<p>class_6：该群体入会时间较长，最近乘机时间距今较短，乘机次数多，飞行里程长，但折扣较低，此类用户消费频繁，航空公司保持这类用户，提高用户粘性。</p>
+<p>具体代码可见后续更新&hellip;&hellip;</p>
+</div>
+	</section>
+
+
+</article>
+
+		</main>
+		<div class="w-full h-0 flex-none order-3"></div>
+		<aside role="contentinfo"
+			class="w-full md:w-2/5 xl:w-1/2 md:pr-12 lg:pr-20 xl:pr-24 order-4 md:order-3 md:sticky md:bottom-0 self-end max-w-2xl">
+			<div class="md:float-right md:text-right leading-loose tracking-tight md:mb-2">
+				
+	<div class="md:max-w-xs  flex flex-col md:items-end">
+	<ul class="font-serif flex-grow-0 flex justify-between flex-wrap md:flex-col">
+	
+	
+	<li class="px-1 md:px-0">
+		<a href="/" title="首页 page" 
+			class="font-medium text-medium-red-violet-600 hover:text-medium-red-violet-400" >
+			首页
+		</a>
+	</li>
+	
+	<li class="px-1 md:px-0">
+		<a href="/post/" title="Post page" 
+			class="font-medium text-medium-red-violet-600 hover:text-medium-red-violet-400" >
+			Post
+		</a>
+	</li>
+	
+	<li class="px-1 md:px-0">
+		<a href="/tags/" title="Tags page" >
+			Tags
+		</a>
+	</li>
+	
+	<li class="px-1 md:px-0">
+		<a href="/categories/" title="categories page" >
+			categories
+		</a>
+	</li>
+	
+	
+	
+	
+</ul>
+	
+
+<div class="flex flex-wrap-reverse md:justify-end content-end md:content-start justify-start items-start   max-h-16">
+	
+	
+	
+	
+	<a href='https://github.com/jiaotong325' target="_blank" class="github icon pl-1 text-eucalyptus-400 hover:text-java-400" title="github link" rel="noopener"
+		aria-label="follow on github——Opens in a new window">
+		
+		<div class="fill-current h-8 w-8">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <g>
+        <path fill="none" d="M0 0h24v24H0z"/>
+        <path fill-rule="nonzero" d="M5.883 18.653c-.3-.2-.558-.455-.86-.816a50.32 50.32 0 0 1-.466-.579c-.463-.575-.755-.84-1.057-.949a1 1 0 0 1 .676-1.883c.752.27 1.261.735 1.947 1.588-.094-.117.34.427.433.539.19.227.33.365.44.438.204.137.587.196 1.15.14.023-.382.094-.753.202-1.095C5.38 15.31 3.7 13.396 3.7 9.64c0-1.24.37-2.356 1.058-3.292-.218-.894-.185-1.975.302-3.192a1 1 0 0 1 .63-.582c.081-.024.127-.035.208-.047.803-.123 1.937.17 3.415 1.096A11.731 11.731 0 0 1 12 3.315c.912 0 1.818.104 2.684.308 1.477-.933 2.613-1.226 3.422-1.096.085.013.157.03.218.05a1 1 0 0 1 .616.58c.487 1.216.52 2.297.302 3.19.691.936 1.058 2.045 1.058 3.293 0 3.757-1.674 5.665-4.642 6.392.125.415.19.879.19 1.38a300.492 300.492 0 0 1-.012 2.716 1 1 0 0 1-.019 1.958c-1.139.228-1.983-.532-1.983-1.525l.002-.446.005-.705c.005-.708.007-1.338.007-1.998 0-.697-.183-1.152-.425-1.36-.661-.57-.326-1.655.54-1.752 2.967-.333 4.337-1.482 4.337-4.66 0-.955-.312-1.744-.913-2.404a1 1 0 0 1-.19-1.045c.166-.414.237-.957.096-1.614l-.01.003c-.491.139-1.11.44-1.858.949a1 1 0 0 1-.833.135A9.626 9.626 0 0 0 12 5.315c-.89 0-1.772.119-2.592.35a1 1 0 0 1-.83-.134c-.752-.507-1.374-.807-1.868-.947-.144.653-.073 1.194.092 1.607a1 1 0 0 1-.189 1.045C6.016 7.89 5.7 8.694 5.7 9.64c0 3.172 1.371 4.328 4.322 4.66.865.097 1.201 1.177.544 1.748-.192.168-.429.732-.429 1.364v3.15c0 .986-.835 1.725-1.96 1.528a1 1 0 0 1-.04-1.962v-.99c-.91.061-1.662-.088-2.254-.485z"/>
+    </g>
+</svg>
+
+		</div>
+	</a>
+	
+	
+</div>
+
+	<div class="text-sm text-gray-500 leading-tight a-gray">
+		
+		<br />
+		Built with Hugo and theme <a href="https://github.com/heyeshuang/hugo-theme-tokiwa">Tokiwa</a>. 238 words in this page.
+	</div>
+</div>
+
+			</div>
+		</aside>
+		<footer class="w-full md:w-3/5 xl:w-1/2 order-3 max-w-3xl md:order-4 pt-2">
+			
+<hr class="double-line" />
+<div class="flex flex-wrap justify-between pb-2 leading-loose font-serif">
+    
+    <a class="flex-grow-0" href="/post/vim/">
+        <svg class="fill-current inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24"
+            height="24">
+            <path fill="none" d="M0 0h24v24H0z" />
+            <path d="M7.828 11H20v2H7.828l5.364 5.364-1.414 1.414L4 12l7.778-7.778 1.414 1.414z" /></svg>
+        vim打造
+    </a>
+    
+    
+    <a class="flex-grow-0" href="/post/pen/">
+        Pen
+        <svg class="fill-current inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24"
+            height="24">
+            <path fill="none" d="M0 0h24v24H0z" />
+            <path d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z" /></svg></a>
+    
+</div>
+<div >
+
+
+
+</div>
+<hr />
+<div class="pb-2">
+    
+</div>
+<hr />
+
+		</footer>
+		
+
+<script src="/dist/app.js"></script>
+
+
+	</div>
+</body>
+
+</html>
